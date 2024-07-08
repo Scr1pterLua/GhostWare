@@ -18,11 +18,16 @@ from win32gui import GetWindowText, GetForegroundWindow
 import ctypes
 import win32api
 import win32con
-triggerbotdelay = 0.008
+import random
+holding = False
+hastarget = False
+locked = False
+triggerbotdelay = 0.01
+maxtriggerbotdelay = 0.05
 ScreenY = 1920
 ScreenX = 1080
-
-GunControl = 2
+cansee = False
+GunControl = 1
 MaxEntityRead = 64
 canshoot = False
 canbuy = False
@@ -36,8 +41,12 @@ gui_visible = False
 isgui = False
 color = 1
 aimboter = False
+rage = False
+
 def leftclick():
     return win32api.GetKeyState(win32con.VK_LBUTTON) < 0
+def middleclick():
+    return win32api.GetKeyState(win32con.VK_XBUTTON2) < 0
 def toggle_gui_visibility():
     global gui_visible
     if gui_visible:
@@ -63,8 +72,6 @@ listener_thread.start()
 
 
 
-
-
 def setconsolestatus():
     os.system("cls")
     print(colorama.Fore.MAGENTA + "]-----------------[GHOST]------------------[" + colorama.Fore.WHITE)
@@ -76,7 +83,7 @@ def is_cs2_window_active():
     
     if active_window is not None:
         title = active_window.title
-        if "Counter-Strike 2" in title:
+        if "Counter-Strike 2" in title or "GhostLite" in title:
             return True
     return False
 
@@ -104,7 +111,7 @@ m_pGameSceneNode = client_dll['client.dll']['classes']['C_BaseEntity']['fields']
 m_modelState = client_dll['client.dll']['classes']['CSkeletonInstance']['fields']['m_modelState']
 
 m_hPlayerPawn = client_dll['client.dll']['classes']['CCSPlayerController']['fields']['m_hPlayerPawn']
-
+m_hPlayerPawn = client_dll['client.dll']['classes']['CCSPlayerController']['fields']['m_hPlayerPawn']
 m_iIDEntIndex = client_dll["client.dll"]["classes"]["C_CSPlayerPawnBase"]["fields"]["m_iIDEntIndex"]
 m_bIsDefusing = client_dll['client.dll']['classes']['C_CSPlayerPawn']['fields']['m_bIsDefusing']
 m_bIsScoped = client_dll['client.dll']['classes']['C_CSPlayerPawn']['fields']['m_bIsScoped']
@@ -113,7 +120,6 @@ m_iLastBulletUpdate = client_dll['client.dll']['classes']['C_BaseCSGrenadeProjec
 m_vInitialPosition = client_dll['client.dll']['classes']['C_BaseCSGrenadeProjectile']['fields']['m_arrTrajectoryTrailPoints']
 m_bIsBuyMenuOpen = m_bIsScoped = client_dll['client.dll']['classes']['C_CSPlayerPawn']['fields']['m_bIsBuyMenuOpen']
 m_iShotsFired = client_dll['client.dll']['classes']['C_CSPlayerPawn']['fields']['m_iShotsFired']
-os.system("cls")
 
 try:
    pm = pymem.Pymem("cs2.exe")
@@ -136,16 +142,19 @@ mouse = Controller()
 
 
 def triggerbot():
+    
 
 
     while True:
         try:
             if not GetWindowText(GetForegroundWindow()) == "Counter-Strike 2":
                 continue
-            
-            
             if not listener_threadee:
                 continue
+            
+            
+            
+            
             player = pm.read_longlong(client + dwLocalPlayerPawn)
             entityId = pm.read_int(player + m_iIDEntIndex)
 
@@ -159,23 +168,30 @@ def triggerbot():
                 playerTeam = pm.read_int(player + m_iTeamNum)
                 if entityTeam == playerTeam and teamchecky:
                     continue
-                    
+                global locked
                 entityHp = pm.read_int(entity + m_iHealth)
                 if entityHp > 0:
                     
-                  
-                    time.sleep(triggerbotdelay)
-                    mouse.press(Button.left)
+                        time.sleep(random.uniform(triggerbotdelay, maxtriggerbotdelay))
+                        mouse.click(Button.left)
+                
+                        locked = True
                     
-                    time.sleep(triggerbotdelay)
-                    mouse.release(Button.left)
-                    if recoilcan:
-                        ctypes.windll.user32.mouse_event(0x0001, 0, GunControl,0, 0)
+                    
+                    
+                    
+                    
+                else:
+                    time.sleep(0.015)
+                    locked = False
+            time.sleep(0.015)
+            locked = False
                     
                     
                 
+           
 
-            time.sleep(triggerbotdelay)
+            
             
         except KeyboardInterrupt:
             break
@@ -204,15 +220,16 @@ def aimbot(head_pos,center_x,center_y):
   
     newx = 0
     newy = 0
+    
     import math
     if not head_pos[0] == 0:
        newx = center_x / head_pos[0]
        newx = math.floor(newx)
        if newx == 0:
        
-        newx = 8
+        newx = 5 - math.floor(head_pos[0] / center_x)
        else:
-        newx = -8
+        newx = -5 + math.floor(head_pos[0] / center_x)
 
 
 
@@ -221,9 +238,9 @@ def aimbot(head_pos,center_x,center_y):
        newy = math.floor(newy)
        if newy == 0:
        
-         newy = 10
+         newy = 5 - math.floor(head_pos[1] / center_y)
        else:
-         newy = -10
+         newy = -5 + math.floor(head_pos[1] / center_y)
 
   
     def ifplayerinfovthenlockon():
@@ -231,14 +248,76 @@ def aimbot(head_pos,center_x,center_y):
     # Assuming center_x and center_y are defined elsewhere
 
        ispress = leftclick()  # Assuming leftclick() is defined elsewhere
-
-       if ispress:
-         
-         ctypes.windll.user32.mouse_event(0x0001, newx - math.floor(head_pos[0] / center_x), newy - math.floor(head_pos[1] / center_y), 0, 0)
+      
+       global locked
+       global holding
+       if ispress or locked:
+         if newx == head_pos[0] and newy == head_pos[1] or newx == center_x and newy == center_y:
+             holding = False
+             pass
+         else:
+           holding = True
+           ctypes.windll.user32.mouse_event(0x0001, newx   , newy  , 0, 0)
+       else:
+           holding = False
     ifplayerinfovthenlockon()
 # ESP function
+def rageaimbot(head_pos,center_x,center_y):
+  
+    newx = 0
+    newy = 0
+    
+    import math
+    if not head_pos[0] == 0:
+       newx = center_x / head_pos[0]
+       newx = math.floor(newx)
+       if newx == 0:
+       
+        newx = 7 - math.floor(head_pos[0] / center_x)
+       else:
+        newx = -7 + math.floor(head_pos[0] / center_x)
 
 
+
+    if not head_pos[1] == 0:
+       newy = center_y /  head_pos[1]
+       newy = math.floor(newy)
+       if newy == 0:
+       
+         newy = 7 - math.floor(head_pos[1] / center_y)
+       else:
+         newy = -7 + math.floor(head_pos[1] / center_y)
+
+  
+    def ifplayerinfovthenlockon():
+       
+    # Assuming center_x and center_y are defined elsewhere
+
+       
+       isleftclicker = middleclick()
+       global locked
+       global holding
+       if isleftclicker:
+         
+          
+           ctypes.windll.user32.mouse_event(0x0001, newx   , newy  , 0, 0)
+           
+           
+       else:
+           holding = False
+    ifplayerinfovthenlockon()
+# ESP function
+def rocel():
+    ispress = leftclick()  # Assuming leftclick() is defined elsewhere
+    
+       
+    if ispress and recoilcan and GetWindowText(GetForegroundWindow()) == "Counter-Strike 2":
+      
+          
+          
+      
+        ctypes.windll.user32.mouse_event(0x0001, 0   , GunControl  , 0, 0)
+   
 
 def esp(draw_list):
    
@@ -372,10 +451,11 @@ def draw_entity_esp(draw_list, view_matrix, entity_pawn_addr):
     leg_pos = w2s(view_matrix, headX, headY, legZ, ScreenY,ScreenX)
 
     deltaZ = abs(head_pos[1] - leg_pos[1])
-    leftXX = head_pos[0] - deltaZ // 3
-    rightXX = head_pos[0] + deltaZ // 3
-    leftX = head_pos[0] - deltaZ // 4
-    rightX = head_pos[0] + deltaZ // 4
+    leftXX = head_pos[0] - deltaZ // 3.5
+    rightXX = head_pos[0] + deltaZ // 3.5
+    leftX = head_pos[0] - deltaZ // 4.5
+    rightX = head_pos[0] + deltaZ // 4.5
+
    
     
     
@@ -445,15 +525,32 @@ def draw_entity_esp(draw_list, view_matrix, entity_pawn_addr):
 
     
  
-
+    rocel()
+   
     if aimboter:
-      if head_pos[0] / center_x <= 1.0285 and head_pos[0] / center_x >= 0.975 or head_pos[0] / center_x <= 0.975 and head_pos[0] / center_x >= 1.0285:
-        if head_pos[1] / center_y <= 1.0285 and head_pos[1] / center_y >= 0.89:
-          aimbot(head_pos,center_x,center_y)
+
+         
+      if head_pos[0] / center_x <=  1.0408333333333333 and head_pos[0] / center_x >= 0.9654166666666667 or head_pos[0] / center_x <= 0.9612916666666667 and head_pos[0] / center_x >= 1.0408333333333333:
+        if head_pos[1] / center_y <= 1.025925925925925 and head_pos[1] / center_y >= 0.952037037037037:
+          
+                  aimbot(head_pos,center_x,center_y)
+                  colorr = imgui.get_color_u32_rgba(0.1, 0.6, 0.1, 1)
+                 
+         
+    if rage:
+
+         
+      if head_pos[0] / center_x <=  1.0408333333333333 and head_pos[0] / center_x >= 0.9654166666666667 or head_pos[0] / center_x <= 0.9612916666666667 and head_pos[0] / center_x >= 1.0408333333333333:
+        if head_pos[1] / center_y <= 1.035925925925925 and head_pos[1] / center_y >= 0.945037037037037:
+              
+                  rageaimbot(head_pos,center_x,center_y)
+                  colorr = imgui.get_color_u32_rgba(0.1, 0.6, 0.1, 1)
+            
+          
          
 
           
-          colorr = imgui.get_color_u32_rgba(1, 0.1, 0.1, 1)
+         
        
 
     
@@ -477,8 +574,8 @@ def draw_entity_esp(draw_list, view_matrix, entity_pawn_addr):
         draw_list.add_line(leftX, head_pos[1], leftX, leg_pos[1], colorr, 1)
         draw_list.add_line(rightX, head_pos[1], rightX, leg_pos[1], colorr, 1)
     if skelly:
-        draw_list.add_line(chest_pos[0], chest_pos[1],head_pos[0], head_pos[1], colorr, 1)
-        draw_list.add_line(chest_pos[0], chest_pos[1], chest_pos[0], chest_pos[1], colorr, 1)
+        draw_list.add_line(head_pos[0], head_pos[1],chest_pos[0], chest_pos[1], colorr, 1)
+       
         draw_list.add_line(chest_pos[0], chest_pos[1],right_leg_pos[0], right_leg_pos[1], colorr, 1)
         draw_list.add_line(chest_pos[0], chest_pos[1],left_leg_pos[0], left_leg_pos[1],colorr, 1)
         draw_list.add_line(chest_pos[0], chest_pos[1],right_hand_pos[0], right_hand_pos[1], colorr, 1)
@@ -521,7 +618,6 @@ def main():
     while not glfw.window_should_close(window):
         glfw.poll_events()
         impl.process_inputs()
-
         imgui.new_frame()
         imgui.set_next_window_size(ScreenY, ScreenX)
         imgui.set_next_window_position(0, 0)
@@ -530,23 +626,28 @@ def main():
         
       
         
-            
-        if watermark:
        
-           current_time = time.strftime("%Y-%m-%d", time.localtime())
-           imgui.text_colored("Ghost | " + current_time, 0.1,0.1,0.1)
+    
+
+    
+        
+    
+        
+       
          
            
 
 
         esp(draw_list)
-
+      
+           
         imgui.end()
         imgui.end_frame()
-
+        
         gl.glClearColor(0, 0, 0, 0)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         
+       
         imgui.render()
         impl.render(imgui.get_draw_data())
 
@@ -751,6 +852,20 @@ def toggle_button_coloruuu(button):
          new_color = 'red'
          aimboter = False
          button.config(bg=new_color, activebackground=new_color)
+def toggle_button_coloruuuu(button):
+    current_color = button.cget("bg")
+    new_color = 'red'
+    global rage
+    if current_color == 'red':
+        new_color = 'green'
+        
+        button.config(bg=new_color, activebackground=new_color)
+        rage = True
+        
+    else:
+         new_color = 'red'
+         rage = False
+         button.config(bg=new_color, activebackground=new_color)
 def toggle_button_colorcolor(button):
     current_color = 'white'
     global color
@@ -873,6 +988,14 @@ def create_toggle_buttonuuu(parent, text, checked_color, unchecked_color):
     toggle.config(command=lambda: toggle_button_coloruuu(toggle))
     toggle.pack(side='right', padx=2, pady=2)
     return frame
+def create_toggle_buttonuuuu(parent, text, checked_color, unchecked_color):
+    frame = tk.Frame(parent, bg='#1d1918')
+    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
+    label.pack(side='left', padx=2, pady=2)
+    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
+    toggle.config(command=lambda: toggle_button_coloruuuu(toggle))
+    toggle.pack(side='right', padx=2, pady=2)
+    return frame
 def create_toggle_buttoncolor(parent, text, unchecked_color):
     frame = tk.Frame(parent, bg='#1d1918')
     label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
@@ -937,14 +1060,14 @@ main_frame = tk.Frame(root, bg='#1d1918')
 main_frame.pack(side='left', padx=5, pady=5)
 # Define the window size
 window_width = 180
-window_height = 510
+window_height = 500
 root.withdraw()  # Hide the Tkinter GUI
 # Center the window
 center_window(root, window_width, window_height)
 
 # Remove the default window decorations
 root.overrideredirect(True)
-
+root.attributes('-topmost', True)  # Make overlay stay on top
 # Create a custom title bar
 
 
@@ -971,9 +1094,9 @@ sections = [
     ('BuyMenuEsp', 'green', 'red'),
     ('TriggerBot', 'green', 'red'),
     ('RecoilBot', 'green', 'red'),
-    ('Aimbot', 'green', 'red'),
+    ('Legitbot', 'green', 'red'),
+    ('Ragebot', 'green', 'red'),
     ('TeamCheck', 'green', 'red'),
-    ('WaterMark', 'red', 'green'),
     ('ColorMode', 'white')
     
     
@@ -1001,14 +1124,14 @@ for section in sections:
         widget = create_toggle_button9222(main_frame, section[0], section[1], section[2])
     if section[0] == "TriggerBot":
         widget = create_toggle_buttonu(main_frame, section[0], section[1], section[2])
-    if section[0] == "Aimbot":
+    if section[0] == "Ragebot":
+        widget = create_toggle_buttonuuuu(main_frame, section[0], section[1], section[2])
+    if section[0] == "Legitbot":
         widget = create_toggle_buttonuuu(main_frame, section[0], section[1], section[2])
     if section[0] == "TracerEsp":
         widget = create_toggle_buttonc(main_frame, section[0], section[1], section[2])
     if section[0] == "ColorMode":
         widget = create_toggle_buttoncolor(main_frame, section[0],section[1])
-    if section[0] == "WaterMark":
-        widget = create_toggle_buttoncolore(main_frame, section[0], section[1], section[2])
     if section[0] == "DefuseEsp":
         widget = create_toggle_buttoncolore9(main_frame, section[0], section[1], section[2])
     
@@ -1026,11 +1149,13 @@ for section in sections:
 
 
 isgui = True
-listener_threade = threading.Thread(target=main)
-listener_threade.start()
+
+listener_threadex = threading.Thread(target=main)
+listener_threadex.start()
 listener_threader = threading.Thread(target=triggerbot)
 listener_threader.start()
 
-# Create the gradient background
 
+# Create the gradient background
 root.mainloop()
+
