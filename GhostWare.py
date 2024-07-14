@@ -1,4 +1,3 @@
-import tkinter as tk
 import pymem, pymem.process
 import win32gui
 import win32con
@@ -19,20 +18,32 @@ import ctypes
 import win32api
 import win32con
 import random
+import math
+#Values for sliders
+ragesmoothing = 0
+legitsmoothing = 0
+recoilamount = 0
+legitfov = 0
+ragefov = 0
+TrueSmoothing = False
 holding = False
 hastarget = False
 locked = False
-triggerbotdelay = 0.01
-maxtriggerbotdelay = 0.05
+triggerbotdelay = 0
+maxtriggerbotdelay = 0
+disrage = 0
+dislegit = 0
+#-----------------
 ScreenY = 1920
 ScreenX = 1080
+#-----------------
 cansee = False
 GunControl = 1
 MaxEntityRead = 64
 canshoot = False
 canbuy = False
 isscoped = False
-recoilcan = False
+recoilcan = True
 watermark = True
 defusecheck = False
 healthcheck = False
@@ -40,30 +51,30 @@ listener_threadee = False
 gui_visible = False
 isgui = False
 color = 1
-aimboter = False
-rage = False
-
+skelly = False
+tracer = False
+box = False
+teamchecky = False
 def leftclick():
-    return win32api.GetKeyState(win32con.VK_LBUTTON) < 0
+    return win32api.GetKeyState(win32con.VK_XBUTTON1) < 0
 def middleclick():
     return win32api.GetKeyState(win32con.VK_XBUTTON2) < 0
 def toggle_gui_visibility():
     global gui_visible
     if gui_visible:
-        root.withdraw()  # Hide the Tkinter GUI
+       
         gui_visible = False
     else:
-        root.deiconify()  # Show the Tkinter GUI
+        
         gui_visible = True
 
 def on_delete_key(event):
-    global isgui
-    if isgui == True:
+
        toggle_gui_visibility()
 
 def listen_for_delete_key():
     keyboard.on_press_key("home", on_delete_key)
-    keyboard.wait("esc")  # This will block only this thread
+    
 
 listener_thread = threading.Thread(target=listen_for_delete_key)
 listener_thread.daemon = True  # This makes sure the thread will close when the main program exits
@@ -90,10 +101,19 @@ def is_cs2_window_active():
 
 
 
-skelly = False
-tracer = False
-box = False
-teamchecky = False
+
+try:
+   pm = pymem.Pymem("cs2.exe")
+   
+   setconsolestatus()
+
+except:
+    
+    print(colorama.Fore.RED + "[GHOST] [SYSTEM] [ERROR]" + colorama.Fore.WHITE)
+    
+      
+    
+    
 offsets = get('https://raw.githubusercontent.com/a2x/cs2-dumper/main/output/offsets.json').json()
 client_dll = get('https://raw.githubusercontent.com/a2x/cs2-dumper/main/output/client.dll.json').json()
 dwEntityList = offsets["client.dll"]["dwEntityList"]
@@ -116,19 +136,10 @@ m_iIDEntIndex = client_dll["client.dll"]["classes"]["C_CSPlayerPawnBase"]["field
 m_bIsDefusing = client_dll['client.dll']['classes']['C_CSPlayerPawn']['fields']['m_bIsDefusing']
 m_bIsScoped = client_dll['client.dll']['classes']['C_CSPlayerPawn']['fields']['m_bIsScoped']
 m_iHealth = client_dll['client.dll']['classes']['C_BaseEntity']['fields']['m_iHealth']
-m_iLastBulletUpdate = client_dll['client.dll']['classes']['C_BaseCSGrenadeProjectile']['fields']['vecLastTrailLinePos']
-m_vInitialPosition = client_dll['client.dll']['classes']['C_BaseCSGrenadeProjectile']['fields']['m_arrTrajectoryTrailPoints']
 m_bIsBuyMenuOpen = m_bIsScoped = client_dll['client.dll']['classes']['C_CSPlayerPawn']['fields']['m_bIsBuyMenuOpen']
 m_iShotsFired = client_dll['client.dll']['classes']['C_CSPlayerPawn']['fields']['m_iShotsFired']
 
-try:
-   pm = pymem.Pymem("cs2.exe")
-   setconsolestatus()
 
-except:
-    print(colorama.Fore.RED + "[GHOST] [SYSTEM] [ERROR]" + colorama.Fore.WHITE)
-    
-    
 
 client = pymem.process.module_from_name(pm.process_handle, "client.dll").lpBaseOfDll
 mouse = Controller()
@@ -149,7 +160,7 @@ def triggerbot():
         try:
             if not GetWindowText(GetForegroundWindow()) == "Counter-Strike 2":
                 continue
-            if not listener_threadee:
+            if maxtriggerbotdelay == 0 and triggerbotdelay == 0:
                 continue
             
             
@@ -182,9 +193,9 @@ def triggerbot():
                     
                     
                 else:
-                    time.sleep(0.015)
+                    
                     locked = False
-            time.sleep(0.015)
+            
             locked = False
                     
                     
@@ -220,27 +231,50 @@ def aimbot(head_pos,center_x,center_y):
   
     newx = 0
     newy = 0
+    global legitsmoothing
+    global TrueSmoothing
     
-    import math
     if not head_pos[0] == 0:
        newx = center_x / head_pos[0]
        newx = math.floor(newx)
-       if newx == 0:
+       if TrueSmoothing:
+          if newx == 0:
        
-        newx = 5 - math.floor(head_pos[0] / center_x)
+            newx = legitsmoothing - math.floor(center_x / center_y / head_pos[0] )
+       
+          else:
+       
+            newx = -legitsmoothing + math.floor(center_x / center_y / head_pos[0]) 
        else:
-        newx = -5 + math.floor(head_pos[0] / center_x)
+           if newx == 0:
+       
+            newx = legitsmoothing 
+       
+           else:
+       
+            newx = -legitsmoothing 
 
 
 
     if not head_pos[1] == 0:
        newy = center_y /  head_pos[1]
        newy = math.floor(newy)
-       if newy == 0:
+       if TrueSmoothing:
+          if newy == 0:
        
-         newy = 5 - math.floor(head_pos[1] / center_y)
+            newy = legitsmoothing - math.floor(center_y / center_x / head_pos[1]) 
+       
+          else:
+       
+            newy = -legitsmoothing + math.floor(center_y / center_x / head_pos[1]) 
        else:
-         newy = -5 + math.floor(head_pos[1] / center_y)
+           if newy == 0:
+       
+            newy = legitsmoothing 
+       
+           else:
+       
+            newy = -legitsmoothing 
 
   
     def ifplayerinfovthenlockon():
@@ -252,11 +286,8 @@ def aimbot(head_pos,center_x,center_y):
        global locked
        global holding
        if ispress or locked:
-         if newx == head_pos[0] and newy == head_pos[1] or newx == center_x and newy == center_y:
-             holding = False
-             pass
-         else:
-           holding = True
+        
+           
            ctypes.windll.user32.mouse_event(0x0001, newx   , newy  , 0, 0)
        else:
            holding = False
@@ -266,28 +297,52 @@ def rageaimbot(head_pos,center_x,center_y):
   
     newx = 0
     newy = 0
+    global ragesmoothing
+    global TrueSmoothing
     
-    import math
     if not head_pos[0] == 0:
+       
        newx = center_x / head_pos[0]
        newx = math.floor(newx)
-       if newx == 0:
+       if TrueSmoothing:
+          if newx == 0:
        
-        newx = 7 - math.floor(head_pos[0] / center_x)
+            newx = ragesmoothing  - math.floor(center_x / center_y / head_pos[0] ) 
+       
+          else:
+       
+            newx = -ragesmoothing  + math.floor(center_x / center_y / head_pos[0]) 
        else:
-        newx = -7 + math.floor(head_pos[0] / center_x)
+           if newx == 0:
+       
+            newx = ragesmoothing 
+       
+           else:
+       
+            newx = -ragesmoothing 
+        
 
 
 
     if not head_pos[1] == 0:
        newy = center_y /  head_pos[1]
        newy = math.floor(newy)
-       if newy == 0:
+       if TrueSmoothing:
+          if newy == 0:
        
-         newy = 7 - math.floor(head_pos[1] / center_y)
+            newy = ragesmoothing  - math.floor(center_y /  center_x / head_pos[1])
+       
+          else:
+       
+            newy = -ragesmoothing  + math.floor(center_y / center_x / head_pos[1]) 
        else:
-         newy = -7 + math.floor(head_pos[1] / center_y)
-
+           if newy == 0:
+       
+            newy = ragesmoothing
+       
+           else:
+       
+            newy = -ragesmoothing 
   
     def ifplayerinfovthenlockon():
        
@@ -308,15 +363,17 @@ def rageaimbot(head_pos,center_x,center_y):
     ifplayerinfovthenlockon()
 # ESP function
 def rocel():
-    ispress = leftclick()  # Assuming leftclick() is defined elsewhere
+    ispress = leftclick()  # Assuming leftclick() is defined elsewhere\
+    isleftclicker = middleclick()
+    global recoilamount
     
        
-    if ispress and recoilcan and GetWindowText(GetForegroundWindow()) == "Counter-Strike 2":
+    if ispress and recoilcan or isleftclicker and GetWindowText(GetForegroundWindow()) == "Counter-Strike 2":
       
           
           
       
-        ctypes.windll.user32.mouse_event(0x0001, 0   , GunControl  , 0, 0)
+        ctypes.windll.user32.mouse_event(0x0001, 0   , recoilamount  , 0, 0)
    
 
 def esp(draw_list):
@@ -404,8 +461,8 @@ def is_entity_alive(entity_pawn_addr):
 
 def draw_entity_esp(draw_list, view_matrix, entity_pawn_addr):
     BONE_POSITIONS = {
-        "head": 6, "chest": 15, "left_hand": 10,
-        "right_hand": 2, "left_leg": 23, "right_leg": 26
+        "head": 6, "chest": 0, "left_hand": 10,
+        "right_hand": 15, "left_leg": 24, "right_leg": 27
     }
     
 
@@ -455,6 +512,8 @@ def draw_entity_esp(draw_list, view_matrix, entity_pawn_addr):
     rightXX = head_pos[0] + deltaZ // 3.5
     leftX = head_pos[0] - deltaZ // 4.5
     rightX = head_pos[0] + deltaZ // 4.5
+    center_x = ScreenY / 2
+    center_y = ScreenX / 2
 
    
     
@@ -464,6 +523,9 @@ def draw_entity_esp(draw_list, view_matrix, entity_pawn_addr):
     
     
     Hp = pm.read_int(entity_pawn_addr + m_iHealth)
+    
+    
+   
     if defusecheck:
         isdefusing = pm.read_int(entity_pawn_addr + m_bIsDefusing)
         
@@ -486,8 +548,7 @@ def draw_entity_esp(draw_list, view_matrix, entity_pawn_addr):
         colorr = imgui.get_color_u32_rgba(0.1, 0.33, 1, 1)
     elif color == 4:
         colorr = imgui.get_color_u32_rgba(1, 0.85, 0.1, 1)
-    center_x = ScreenY / 2
-    center_y = ScreenX / 2
+    
     
     
     if canbuy:
@@ -517,34 +578,45 @@ def draw_entity_esp(draw_list, view_matrix, entity_pawn_addr):
         elif Hp <= 0:
             healthcolor = imgui.get_color_u32_rgba(0.1, 0.1, 0.1, 0.1)
         
-        draw_list.add_line(leftXX, head_pos[1], leftXX, leg_pos[1], healthcolor, 1)
+        draw_list.add_line(leftXX, leg_pos[1], leftXX, head_pos[1], healthcolor, 1)
     
     
 
     
 
     
- 
-    rocel()
-   
-    if aimboter:
-
-         
-      if head_pos[0] / center_x <=  1.0408333333333333 and head_pos[0] / center_x >= 0.9654166666666667 or head_pos[0] / center_x <= 0.9612916666666667 and head_pos[0] / center_x >= 1.0408333333333333:
-        if head_pos[1] / center_y <= 1.025925925925925 and head_pos[1] / center_y >= 0.952037037037037:
-          
-                  aimbot(head_pos,center_x,center_y)
-                  colorr = imgui.get_color_u32_rgba(0.1, 0.6, 0.1, 1)
+    
                  
          
-    if rage:
+ 
 
+    distance = math.sqrt((head_pos[0] - center_x)**2 + (head_pos[1] - center_y)**2)
+
+
+    threshold_distance = ragefov
+
+
+    if distance <= threshold_distance and not ragesmoothing == 0:
+       if not distance <= disrage:
+
+  
+        rageaimbot(head_pos,center_x,center_y)
+        colorr = imgui.get_color_u32_rgba(1, 0.1, 0.1, 1)
+    
+    
+    
+    if distance <= threshold_distance and not legitsmoothing == 0:
+       if not distance <= dislegit:
          
-      if head_pos[0] / center_x <=  1.0408333333333333 and head_pos[0] / center_x >= 0.9654166666666667 or head_pos[0] / center_x <= 0.9612916666666667 and head_pos[0] / center_x >= 1.0408333333333333:
-        if head_pos[1] / center_y <= 1.035925925925925 and head_pos[1] / center_y >= 0.945037037037037:
-              
-                  rageaimbot(head_pos,center_x,center_y)
-                  colorr = imgui.get_color_u32_rgba(0.1, 0.6, 0.1, 1)
+    
+          
+        aimbot(head_pos,center_x,center_y)
+        colorr = imgui.get_color_u32_rgba(1, 0.1, 0.1, 1)
+
+                  
+    
+   
+    
             
           
          
@@ -580,6 +652,8 @@ def draw_entity_esp(draw_list, view_matrix, entity_pawn_addr):
         draw_list.add_line(chest_pos[0], chest_pos[1],left_leg_pos[0], left_leg_pos[1],colorr, 1)
         draw_list.add_line(chest_pos[0], chest_pos[1],right_hand_pos[0], right_hand_pos[1], colorr, 1)
         draw_list.add_line(chest_pos[0], chest_pos[1],left_hand_pos[0], left_hand_pos[1], colorr, 1)
+    rocel()
+    
     
 
 
@@ -614,15 +688,166 @@ def main():
 
     imgui.create_context()
     impl = GlfwRenderer(window)
+    global gui_visible
+    global ragesmoothing
+    global skelly
+    global legitsmoothing
+    global box
+    global ragefov
+    global legitfov
+    global teamchecky
+    global tracer
+    global healthcheck
+    global recoilamount
+    global maxtriggerbotdelay
+    global triggerbotdelay
+    global color
+    global TrueSmoothing
+    global disrage
+    global dislegit
+    if not glfw.init():
+        print("Could not initialize OpenGL context")
+        exit(1)
 
-    while not glfw.window_should_close(window):
-        glfw.poll_events()
-        impl.process_inputs()
-        imgui.new_frame()
-        imgui.set_next_window_size(ScreenY, ScreenX)
-        imgui.set_next_window_position(0, 0)
-        imgui.begin("overlay", flags=imgui.WINDOW_NO_TITLE_BAR | imgui.WINDOW_NO_RESIZE | imgui.WINDOW_NO_SCROLLBAR | imgui.WINDOW_NO_COLLAPSE | imgui.WINDOW_NO_BACKGROUND)
-        draw_list = imgui.get_window_draw_list()
+    # Create a windowed mode window and its OpenGL context
+   
+    #windowe = glfw.create_window(ScreenY, ScreenX, "ImGui with GLFW Example", None, None)
+    hwndd = glfw.get_win32_window(window)
+    style = win32gui.GetWindowLong(hwndd, win32con.GWL_STYLE)
+    style &= ~(win32con.WS_CAPTION | win32con.WS_THICKFRAME)
+    win32gui.SetWindowLong(hwndd, win32con.GWL_STYLE, style)
+  
+ 
+    
+    if not window:
+        glfw.terminate()
+        return
+
+    # Make the window's context current
+    glfw.make_context_current(window)
+
+    # Create an ImGui context and a renderer for GLFW
+    imgui.create_context()
+    impl = GlfwRenderer(window)
+
+    
+
+    # Loop until the user closes the window
+    while True:
+        if gui_visible:
+             ex_style = win32con.WS_EX_TRANSPARENT
+             win32gui.SetWindowLong(hwndd, win32con.GWL_EXSTYLE, ex_style)
+             
+        else:
+             ex_style = win32con.WS_EX_TRANSPARENT | win32con.WS_EX_LAYERED
+             win32gui.SetWindowLong(hwndd, win32con.GWL_EXSTYLE, ex_style)
+
+        # Poll for and process events
+        if gui_visible:
+            glfw.poll_events()
+            impl.process_inputs()
+
+        # Start a new ImGui frame
+            imgui.new_frame()
+            #imgui.set_next_window_position(0, 0)
+            imgui.set_next_window_size(450, 325)
+        
+        
+        
+            
+            imgui.begin("GhostWare",flags = imgui.WINDOW_NO_RESIZE)
+        
+            superchangeddd, ragefov = imgui.slider_float("Fov",  math.floor(ragefov), 0,100)
+            
+            
+            changed, ragesmoothing = imgui.slider_float("AimBot Speed", math.floor(ragesmoothing), 0,15)
+            ragesmoothing = math.floor(ragesmoothing)
+          
+            superchangedzxzxcv, disrage = imgui.slider_float("AimBot Smoother", math.floor(disrage), 0,5)
+            
+            superchangedzxzx, legitsmoothing = imgui.slider_float("LegitBot Speed", math.floor(legitsmoothing), 0,15)
+            legitsmoothing = math.floor(legitsmoothing)
+            
+            superchangedzxzxc, dislegit = imgui.slider_float("LegitBot Smoother", math.floor(dislegit), 0,5)
+            
+            
+
+            
+            
+         
+            superchangeddd, recoilamount = imgui.slider_float("RecoilControl", math.floor(recoilamount), 0,5)
+            recoilamount = math.floor(recoilamount)
+           
+            superchangedddx, triggerbotdelay = imgui.slider_float("TriggerBotDelay", triggerbotdelay, 0,0.1)
+            
+            superchangedddz, maxtriggerbotdelay = imgui.slider_float("MaxTriggerBotDelay", maxtriggerbotdelay, 0,0.1)
+            superchangedddzz, color = imgui.slider_float("ColorMode",  math.floor(color), 1,4)
+           
+            if imgui.button("TeamCheck"):
+                
+                if  teamchecky:
+                
+                    teamchecky = False
+                else:
+                    teamchecky = True
+            if imgui.button("Box Esp"):
+                
+                if  box:
+                
+                    box = False
+                else:
+                    box = True
+            if imgui.button("Bone Esp"):
+                
+                if skelly:
+                
+                    skelly = False
+                else:
+                    skelly = True
+            if imgui.button("SnapLines"):
+                
+                if tracer:
+                
+                    tracer = False
+                else:
+                    tracer = True
+            if imgui.button("HealthBar"):
+                
+                if healthcheck:
+                
+                    healthcheck = False
+                else:
+                    healthcheck = True
+                
+                
+        
+            
+        
+            imgui.end()
+            imgui.end_frame()
+            gl.glClearColor(0, 0, 0, 0)
+            gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+        
+            
+            
+            
+    
+        
+        
+        
+
+      
+            imgui.render()
+            impl.render(imgui.get_draw_data())
+            glfw.swap_buffers(window)
+        else:
+            glfw.poll_events()
+            impl.process_inputs()
+            imgui.new_frame()
+            imgui.set_next_window_size(ScreenY, ScreenX)
+            imgui.set_next_window_position(0, 0)
+            imgui.begin("overlay", flags=imgui.WINDOW_NO_TITLE_BAR | imgui.WINDOW_NO_RESIZE | imgui.WINDOW_NO_SCROLLBAR | imgui.WINDOW_NO_COLLAPSE | imgui.WINDOW_NO_BACKGROUND)
+            draw_list = imgui.get_window_draw_list()
         
       
         
@@ -638,514 +863,30 @@ def main():
            
 
 
-        esp(draw_list)
+            esp(draw_list)
       
            
-        imgui.end()
-        imgui.end_frame()
+            imgui.end()
+            imgui.end_frame()
         
-        gl.glClearColor(0, 0, 0, 0)
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+            gl.glClearColor(0, 0, 0, 0)
+            gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         
        
-        imgui.render()
-        impl.render(imgui.get_draw_data())
+            imgui.render()
+            impl.render(imgui.get_draw_data())
 
-        glfw.swap_buffers(window)
+            glfw.swap_buffers(window)
 
+        
+
+
+
+    
+        
+        
     impl.shutdown()
     glfw.terminate()
-
-
-    
-
-# Function to handle window movement
-
-
-# Function to close the window
-
-# Function to minimize the window
-
-
-# Function to create a toggle button
-
-def toggle_button_color1(button):
-    current_color = button.cget("bg")
-    new_color = 'red'
-    global skelly
-    if current_color == 'red':
-        new_color = 'green'
-        
-        button.config(bg=new_color, activebackground=new_color)
-       
-        skelly = True
-    else:
-         new_color = 'red'
-         skelly = False
-         button.config(bg=new_color, activebackground=new_color)
-        
-def toggle_button_color2(button):
-    current_color = button.cget("bg")
-    new_color = 'red'
-    global teamchecky
-    if current_color == 'red':
-        new_color = 'green'
-        
-        button.config(bg=new_color, activebackground=new_color)
-       
-        teamchecky = True
-    else:
-         new_color = 'red'
-         teamchecky = False
-         button.config(bg=new_color, activebackground=new_color)
-def toggle_button_color99(button):
-    current_color = button.cget("bg")
-    new_color = 'red'
-    global watermark
-    if current_color == 'red':
-        new_color = 'green'
-        
-        button.config(bg=new_color, activebackground=new_color)
-       
-        watermark = True
-    else:
-         new_color = 'red'
-         watermark = False
-         button.config(bg=new_color, activebackground=new_color)
-def toggle_button_color999(button):
-    current_color = button.cget("bg")
-    new_color = 'red'
-    global defusecheck
-    if current_color == 'red':
-        new_color = 'green'
-        
-        button.config(bg=new_color, activebackground=new_color)
-       
-        defusecheck = True
-    else:
-         new_color = 'red'
-         defusecheck = False
-         button.config(bg=new_color, activebackground=new_color)
-def toggle_button_color9(button):
-    current_color = button.cget("bg")
-    new_color = 'red'
-    global box
-    if current_color == 'red':
-        new_color = 'green'
-        
-        button.config(bg=new_color, activebackground=new_color)
-       
-        box = True
-    else:
-         new_color = 'red'
-         box = False
-         button.config(bg=new_color, activebackground=new_color)
-def toggle_button_color92(button):
-    current_color = button.cget("bg")
-    new_color = 'red'
-    global healthcheck
-    if current_color == 'red':
-        new_color = 'green'
-        
-        button.config(bg=new_color, activebackground=new_color)
-       
-        healthcheck = True
-    else:
-         new_color = 'red'
-         healthcheck = False
-         button.config(bg=new_color, activebackground=new_color)
-def toggle_button_color69(button):
-    current_color = button.cget("bg")
-    new_color = 'red'
-    global recoilcan
-    if current_color == 'red':
-        new_color = 'green'
-        
-        button.config(bg=new_color, activebackground=new_color)
-       
-        recoilcan = True
-    else:
-         new_color = 'red'
-         recoilcan = False
-         button.config(bg=new_color, activebackground=new_color)
-def toggle_button_color922(button):
-    current_color = button.cget("bg")
-    new_color = 'red'
-    global isscoped
-    if current_color == 'red':
-        new_color = 'green'
-        
-        button.config(bg=new_color, activebackground=new_color)
-       
-        isscoped = True
-    else:
-         new_color = 'red'
-         isscoped = False
-         button.config(bg=new_color, activebackground=new_color)
-def toggle_button_color9222(button):
-    current_color = button.cget("bg")
-    new_color = 'red'
-    global canshoot
-    if current_color == 'red':
-        new_color = 'green'
-        
-        button.config(bg=new_color, activebackground=new_color)
-       
-        canshoot = True
-    else:
-         new_color = 'red'
-         canshoot = False
-         button.config(bg=new_color, activebackground=new_color)
-def toggle_button_color92222(button):
-    current_color = button.cget("bg")
-    new_color = 'red'
-    global canbuy
-    if current_color == 'red':
-        new_color = 'green'
-        
-        button.config(bg=new_color, activebackground=new_color)
-       
-        canbuy = True
-    else:
-         new_color = 'red'
-         canbuy = False
-         button.config(bg=new_color, activebackground=new_color)
-def toggle_button_colorc(button):
-    current_color = button.cget("bg")
-    new_color = 'red'
-    global tracer
-    if current_color == 'red':
-        new_color = 'green'
-        
-        button.config(bg=new_color, activebackground=new_color)
-       
-        tracer = True
-    else:
-         new_color = 'red'
-         tracer = False
-         button.config(bg=new_color, activebackground=new_color)
-def toggle_button_coloru(button):
-    current_color = button.cget("bg")
-    new_color = 'red'
-    global listener_threadee
-    if current_color == 'red':
-        new_color = 'green'
-        
-        button.config(bg=new_color, activebackground=new_color)
-        listener_threadee = True
-        
-    else:
-         new_color = 'red'
-         listener_threadee = False
-         button.config(bg=new_color, activebackground=new_color)
-def toggle_button_coloruuu(button):
-    current_color = button.cget("bg")
-    new_color = 'red'
-    global aimboter
-    if current_color == 'red':
-        new_color = 'green'
-        
-        button.config(bg=new_color, activebackground=new_color)
-        aimboter = True
-        
-    else:
-         new_color = 'red'
-         aimboter = False
-         button.config(bg=new_color, activebackground=new_color)
-def toggle_button_coloruuuu(button):
-    current_color = button.cget("bg")
-    new_color = 'red'
-    global rage
-    if current_color == 'red':
-        new_color = 'green'
-        
-        button.config(bg=new_color, activebackground=new_color)
-        rage = True
-        
-    else:
-         new_color = 'red'
-         rage = False
-         button.config(bg=new_color, activebackground=new_color)
-def toggle_button_colorcolor(button):
-    current_color = 'white'
-    global color
-    if color == 3:
-         new_color = 'yellow'
-         color = 4
-         
-         
-         button.config(bg=new_color, activebackground=new_color)
-    elif color == 4:
-         color = 1
-         new_color = 'white'
-         
-         button.config(bg=new_color, activebackground=new_color)
-
-    elif color == 1:
-        new_color = 'gray'
-        color = 2
-        
-        button.config(bg=new_color, activebackground=new_color)
-        
-        
-    elif color == 2:
-         new_color = 'blue' 
-         color = 3
-         
-         button.config(bg=new_color, activebackground=new_color)
-
-
-
-    
-
-# Function to create a toggle button
-
-def create_toggle_button1(parent, text, checked_color, unchecked_color):
-    frame = tk.Frame(parent, bg='#1d1918')
-    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
-    label.pack(side='left', padx=2, pady=2)
-    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
-    toggle.config(command=lambda: toggle_button_color1(toggle))
-    toggle.pack(side='right', padx=2, pady=2)
-    return frame
-def create_toggle_button2(parent, text, checked_color, unchecked_color):
-    frame = tk.Frame(parent, bg='#1d1918')
-    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
-    label.pack(side='left', padx=2, pady=2)
-    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
-    toggle.config(command=lambda: toggle_button_color2(toggle))
-    toggle.pack(side='right', padx=2, pady=2)
-    return frame
-def create_toggle_button9(parent, text, checked_color, unchecked_color):
-    frame = tk.Frame(parent, bg='#1d1918')
-    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
-    label.pack(side='left', padx=2, pady=2)
-    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
-    toggle.config(command=lambda: toggle_button_color9(toggle))
-    toggle.pack(side='right', padx=2, pady=2)
-    return frame
-def create_toggle_button92(parent, text, checked_color, unchecked_color):
-    frame = tk.Frame(parent, bg='#1d1918')
-    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
-    label.pack(side='left', padx=2, pady=2)
-    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
-    toggle.config(command=lambda: toggle_button_color92(toggle))
-    toggle.pack(side='right', padx=2, pady=2)
-    return frame
-def create_toggle_button69(parent, text, checked_color, unchecked_color):
-    frame = tk.Frame(parent, bg='#1d1918')
-    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
-    label.pack(side='left', padx=2, pady=2)
-    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
-    toggle.config(command=lambda: toggle_button_color69(toggle))
-    toggle.pack(side='right', padx=2, pady=2)
-    return frame
-def create_toggle_button922(parent, text, checked_color, unchecked_color):
-    frame = tk.Frame(parent, bg='#1d1918')
-    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
-    label.pack(side='left', padx=2, pady=2)
-    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
-    toggle.config(command=lambda: toggle_button_color922(toggle))
-    toggle.pack(side='right', padx=2, pady=2)
-    return frame
-def create_toggle_button9222(parent, text, checked_color, unchecked_color):
-    frame = tk.Frame(parent, bg='#1d1918')
-    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
-    label.pack(side='left', padx=2, pady=2)
-    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
-    toggle.config(command=lambda: toggle_button_color9222(toggle))
-    toggle.pack(side='right', padx=2, pady=2)
-    return frame
-def create_toggle_button92222(parent, text, checked_color, unchecked_color):
-    frame = tk.Frame(parent, bg='#1d1918')
-    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
-    label.pack(side='left', padx=2, pady=2)
-    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
-    toggle.config(command=lambda: toggle_button_color92222(toggle))
-    toggle.pack(side='right', padx=2, pady=2)
-    return frame
-def create_toggle_buttonc(parent, text, checked_color, unchecked_color):
-    frame = tk.Frame(parent, bg='#1d1918')
-    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
-    label.pack(side='left', padx=2, pady=2)
-    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
-    toggle.config(command=lambda: toggle_button_colorc(toggle))
-    toggle.pack(side='right', padx=2, pady=2)
-    return frame
-def create_toggle_buttonu(parent, text, checked_color, unchecked_color):
-    frame = tk.Frame(parent, bg='#1d1918')
-    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
-    label.pack(side='left', padx=2, pady=2)
-    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
-    toggle.config(command=lambda: toggle_button_coloru(toggle))
-    toggle.pack(side='right', padx=2, pady=2)
-    return frame
-def create_toggle_buttonuuu(parent, text, checked_color, unchecked_color):
-    frame = tk.Frame(parent, bg='#1d1918')
-    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
-    label.pack(side='left', padx=2, pady=2)
-    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
-    toggle.config(command=lambda: toggle_button_coloruuu(toggle))
-    toggle.pack(side='right', padx=2, pady=2)
-    return frame
-def create_toggle_buttonuuuu(parent, text, checked_color, unchecked_color):
-    frame = tk.Frame(parent, bg='#1d1918')
-    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
-    label.pack(side='left', padx=2, pady=2)
-    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
-    toggle.config(command=lambda: toggle_button_coloruuuu(toggle))
-    toggle.pack(side='right', padx=2, pady=2)
-    return frame
-def create_toggle_buttoncolor(parent, text, unchecked_color):
-    frame = tk.Frame(parent, bg='#1d1918')
-    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
-    label.pack(side='left', padx=2, pady=2)
-    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
-    toggle.config(command=lambda: toggle_button_colorcolor(toggle))
-    toggle.pack(side='right', padx=2, pady=2)
-    return frame
-def create_toggle_buttoncolore(parent, text, checked_color, unchecked_color):
-    frame = tk.Frame(parent, bg='#1d1918')
-    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
-    label.pack(side='left', padx=2, pady=2)
-    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
-    toggle.config(command=lambda: toggle_button_color99(toggle))
-    toggle.pack(side='right', padx=2, pady=2)
-    return frame
-def create_toggle_buttoncolore9(parent, text, checked_color, unchecked_color):
-    frame = tk.Frame(parent, bg='#1d1918')
-    label = tk.Label(frame, text=text, width=15, anchor='w', bg='#1d1918', fg='white', font=("Helvetica", 10))
-    label.pack(side='left', padx=2, pady=2)
-    toggle = tk.Button(frame, bg=unchecked_color, activebackground=unchecked_color, relief='flat', width=2, height=1)
-    toggle.config(command=lambda: toggle_button_color999(toggle))
-    toggle.pack(side='right', padx=2, pady=2)
-    
-    return frame
-
-
-
-
-
-# Function to create a color option
-
-# Function to create a slider
-
-
-# Initialize the main application window
-
-root = tk.Tk()
-root.title("GhostLite")
-root.configure(bg='#1d1918')
-root.attributes('-topmost', True)  # Make overlay stay on top
-def center_window(window, width, height):
-    # Get the screen width and height
-    screen_width = window.winfo_screenwidth()
-    screen_height = window.winfo_screenheight()
-    
-    # Calculate the position
-    x = (screen_width // 2) - (width // 2)
-    y = (screen_height // 2) - (height // 2)
-    
-    # Set the geometry of the window
-    window.geometry(f'{width}x{height}+{x}+{y}')
-
-# Create the main window
-
-menu_frame = tk.Frame(root, bg='#1d1918')
-menu_frame.pack(side='left', fill='y', padx=5, pady=5)
-
-
-# Main settings frame
-main_frame = tk.Frame(root, bg='#1d1918')
-main_frame.pack(side='left', padx=5, pady=5)
-# Define the window size
-window_width = 180
-window_height = 500
-root.withdraw()  # Hide the Tkinter GUI
-# Center the window
-center_window(root, window_width, window_height)
-
-# Remove the default window decorations
-root.overrideredirect(True)
-root.attributes('-topmost', True)  # Make overlay stay on top
-# Create a custom title bar
-
-
-
-# Bind the title bar to the window movement function
-
-
-# Side menu buttons
-
-
-#create_gradient(canvas, window_width, window_height, '#2a2521', '#1d1918')
-# Section headers
-
-
-# Add widgets to the main frame
-sections = [
-    ('SkeletonEsp', 'green', 'red'),
-    ('BoxEsp', 'green', 'red'),
-    ('TracerEsp', 'green', 'red'),
-    ('DefuseEsp', 'green', 'red'),
-    ('HealthEsp', 'green', 'red'),
-    ('ScopeEsp', 'green', 'red'),
-    ('ShotEsp', 'green', 'red'),
-    ('BuyMenuEsp', 'green', 'red'),
-    ('TriggerBot', 'green', 'red'),
-    ('RecoilBot', 'green', 'red'),
-    ('Legitbot', 'green', 'red'),
-    ('Ragebot', 'green', 'red'),
-    ('TeamCheck', 'green', 'red'),
-    ('ColorMode', 'white')
-    
-    
-    
-
-    
-]
-
-for section in sections:
-    if section[0] == "SkeletonEsp":
-        widget = create_toggle_button1(main_frame, section[0], section[1], section[2])
-    if section[0] == "TeamCheck":
-        widget = create_toggle_button2(main_frame, section[0], section[1], section[2])
-    if section[0] == "BoxEsp":
-        widget = create_toggle_button9(main_frame, section[0], section[1], section[2])
-    if section[0] == "HealthEsp":
-        widget = create_toggle_button92(main_frame, section[0], section[1], section[2])
-    if section[0] == "RecoilBot":
-        widget = create_toggle_button69(main_frame, section[0], section[1], section[2])
-    if section[0] == "ScopeEsp":
-        widget = create_toggle_button922(main_frame, section[0], section[1], section[2])
-    if section[0] == "BuyMenuEsp":
-        widget = create_toggle_button92222(main_frame, section[0], section[1], section[2])
-    if section[0] == "ShotEsp":
-        widget = create_toggle_button9222(main_frame, section[0], section[1], section[2])
-    if section[0] == "TriggerBot":
-        widget = create_toggle_buttonu(main_frame, section[0], section[1], section[2])
-    if section[0] == "Ragebot":
-        widget = create_toggle_buttonuuuu(main_frame, section[0], section[1], section[2])
-    if section[0] == "Legitbot":
-        widget = create_toggle_buttonuuu(main_frame, section[0], section[1], section[2])
-    if section[0] == "TracerEsp":
-        widget = create_toggle_buttonc(main_frame, section[0], section[1], section[2])
-    if section[0] == "ColorMode":
-        widget = create_toggle_buttoncolor(main_frame, section[0],section[1])
-    if section[0] == "DefuseEsp":
-        widget = create_toggle_buttoncolore9(main_frame, section[0], section[1], section[2])
-    
-    
-
-    
-    widget.pack(pady=2, fill='y')
-
-
-
-
-# Run the main application loop
-
-
 
 
 isgui = True
@@ -1157,5 +898,4 @@ listener_threader.start()
 
 
 # Create the gradient background
-root.mainloop()
 
