@@ -12,5 +12,6 @@
 
 📸 Preview
 
-![image](https://github.com/user-attachments/assets/0559f36e-25c6-4b14-86c5-e346c9ccad46)
+
+![Ghost](https://github.com/user-attachments/assets/1fbda241-7258-4616-b8ee-18a3bd58570b)
 
