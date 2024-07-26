@@ -1,5 +1,5 @@
 # GhostWare
-⛔ USE AT YOUR OWN RISK ⛔ 
+⛔ USE AT YOUR OWN SKILL ISSUE ⛔ 
 
 ❗ Info 
 
